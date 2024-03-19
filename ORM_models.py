@@ -1,6 +1,6 @@
 import sqlalchemy as sq
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey
 
 Base = declarative_base()
 
@@ -12,14 +12,16 @@ class Publisher(Base):
     name = sq.Column(sq.String(length=30), unique=True)
 
 
-stock = Table(
-    'stock',
-    Base.metadata,
-    Column('id', Integer, primary_key=True),
-    Column('id_book', Integer, ForeignKey('book.id')),
-    Column('id_shop', Integer, ForeignKey('shop.id')),
-    Column('count', Integer, nullable=False)
-)
+class Stock(Base):
+    __tablename__ = 'stock'
+
+    id = Column(Integer, primary_key=True)
+    id_book = Column(Integer, ForeignKey('book.id'))
+    id_shop = Column(Integer, ForeignKey('shop.id'))
+    count = Column(Integer, nullable=False)
+
+    book = relationship('Book', back_populates='stocks')
+    shop = relationship('Shop', back_populates='stocks')
 
 
 class Book(Base):
@@ -30,7 +32,7 @@ class Book(Base):
     id_publisher = sq.Column(sq.Integer, sq.ForeignKey('publisher.id'), nullable=False)
 
     publisher = relationship(Publisher, backref="books")
-    shop = relationship('Shop', secondary=stock, back_populates='book')
+    stocks = relationship('Stock', back_populates='book')
 
 
 class Shop(Base):
@@ -39,19 +41,19 @@ class Shop(Base):
     id = sq.Column(sq.Integer, primary_key=True)
     name = sq.Column(sq.String(length=40), nullable=False, unique=True)
 
-    book = relationship('Book', secondary=stock, back_populates='shop')
+    stocks = relationship('Stock', back_populates='shop')
 
 
 class Sale(Base):
     __tablename__ = 'sale'
 
     id = sq.Column(sq.Integer, primary_key=True, nullable=False)
-    prise = sq.Column(sq.Numeric(precision=10, scale=2), nullable=False)
+    price = sq.Column(sq.Numeric(10, scale=2), nullable=False)
     date_sale = sq.Column(sq.DateTime, nullable=False)
     id_stock = sq.Column(sq.Integer, sq.ForeignKey('stock.id'), nullable=False)
     count = sq.Column(sq.Integer, nullable=False)
 
-    stock = relationship(stock, backref='count')
+    stock = relationship(Stock, backref='sales')
 
 
 def create_tables(engine):
